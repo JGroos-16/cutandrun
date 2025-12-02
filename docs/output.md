@@ -263,7 +263,6 @@ High levels of duplication are not necessarily a problem as long as they are con
   - `.la_dedup.bam`: Coordinate sorted BAM file after Linear Amplification duplicate removal. This is the final post-processed BAM file and so will be saved by default in the results directory.
   - `.la_dedup.bam.bai`: BAI index file for coordinate sorted BAM file after Linear Amplification duplicate removal. This is the final post-processed BAM index file and so will be saved by default in the results directory.
   - `.la_dedup_metrics.txt`: Metrics file from custom deduplication based on read 1 5' start location.
-</details>
 
 In assays where linear amplification is used, the resulting library may contain reads that share the same start site but have a unique 3' end due to random cut and tagmentation with Tn5-ME-B. In this case, these duplicates should be removed by filtering all read 1's based on their 5' start site and keeping the read aligning with the highest mapping quality.
 
