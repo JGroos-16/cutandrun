@@ -16,6 +16,7 @@ run_modules:
   - preseq
   - picard
   - deeptools
+  - kraken
 
 module_order:
   - fastqc:
@@ -39,6 +40,11 @@ module_order:
         - "./bowtie2_spikein/*.bowtie2.log"
   - samtools:
       name: "Samtools alignment scores"
+  - kraken:
+      name: "Kraken2"
+      info: "Kraken2 is a taxonomic classification tool that uses exact k-mer matches to find the lowest common ancestor (LCA) of a given sequence. \n These are the results for the unaligned Reads."
+      path_filters:
+        - "./kraken2/*.txt"
   - preseq:
       name: "Library Complexity"
   - picard:
@@ -99,6 +105,10 @@ sp:
     fn: "*.flagstat"
   samtools/idxstats:
     fn: "*.idxstats*"
+  kraken:
+    dirs:
+      - "kraken2"
+    fn: "*.kraken2.report.txt"
 
   picard/markdups:
     fn: "*.MarkDuplicates.metrics.txt"
