@@ -132,6 +132,7 @@ include { DEEPTOOLS_QC                                     } from "../subworkflo
 include { PEAK_QC                                          } from "../subworkflows/local/peak_qc"
 include { SAMTOOLS_VIEW_SORT_STATS as FILTER_READS         } from "../subworkflows/local/samtools_view_sort_stats"
 include { DEDUPLICATE_LINEAR                               } from "../subworkflows/local/deduplicate_linear"
+include { DIFFERENTIALBINDING_ANALYSIS                     } from "../subworkflows/local/differentialBinding_analysis"
 
 /*
 ========================================================================================
@@ -157,6 +158,7 @@ include { DEEPTOOLS_COMPUTEMATRIX as DEEPTOOLS_COMPUTEMATRIX_PEAKS_ALL } from ".
 include { DEEPTOOLS_PLOTHEATMAP as DEEPTOOLS_PLOTHEATMAP_GENE_ALL      } from "../modules/nf-core/deeptools/plotheatmap/main"
 include { DEEPTOOLS_PLOTHEATMAP as DEEPTOOLS_PLOTHEATMAP_PEAKS_ALL     } from "../modules/nf-core/deeptools/plotheatmap/main"
 include { CUSTOM_DUMPSOFTWAREVERSIONS                                  } from "../modules/local/custom_dumpsoftwareversions"
+include { KRAKEN2_KRAKEN2 as KRAKEN2                                   } from "../modules/nf-core/kraken2/kraken2/main"
 
 /*
  * SUBWORKFLOWS
@@ -268,6 +270,7 @@ workflow CUTANDRUN {
             )
             ch_software_versions          = ch_software_versions.mix(ALIGN_BOWTIE2.out.versions)
             ch_orig_bam                   = ALIGN_BOWTIE2.out.orig_bam
+            ch_unaligned_sequences        = ALIGN_BOWTIE2.out.unal_seqs
             ch_orig_spikein_bam           = ALIGN_BOWTIE2.out.orig_spikein_bam
             ch_bowtie2_log                = ALIGN_BOWTIE2.out.bowtie2_log
             ch_bowtie2_spikein_log        = ALIGN_BOWTIE2.out.bowtie2_spikein_log
@@ -287,6 +290,7 @@ workflow CUTANDRUN {
     }
     //EXAMPLE CHANNEL STRUCT: [[id:h3k27me3_R1, group:h3k27me3, replicate:1, single_end:false, is_control:false], [BAM]]
     //ch_samtools_bam | view
+    //ch_samtools_spikein_bam.collect() | view
 
     /*
      * SUBWORKFLOW: extract aligner metadata
@@ -608,6 +612,31 @@ workflow CUTANDRUN {
         }
 
         /*
+        * SUBWORKFLOW: Do a differential binding analysis
+        */
+        MACS2_CALLPEAK_IGG.out.peak
+        .map { meta, peaks -> peaks }
+        .collect()
+        .set { ch_peaks }
+        ch_samtools_spikein_bam
+        .map { meta, reads -> reads }
+        .collect()
+        .set { ch_spikein_bams }
+        ch_samtools_bam
+        .map { meta, reads -> reads }
+        .collect()
+        .set { ch_bams }
+        DIFFERENTIALBINDING_ANALYSIS (
+            ch_peaks,
+            ch_bams,
+            ch_spikein_bams,
+            ch_input
+        )
+        ch_software_versions = ch_software_versions.mix(DIFFERENTIALBINDING_ANALYSIS.out.versions)
+        //
+        DIFFERENTIALBINDING_ANALYSIS.out.csv | view
+
+        /*
         * MODULE: Add sample identifier column to peak beds
         */
         AWK_NAME_PEAK_BED (
@@ -903,6 +932,17 @@ workflow CUTANDRUN {
     }
     //ch_frag_len_hist_mqc | view
 
+    if (params.contaminant_screening in ['kraken2', 'kraken2_bracken'] ) {
+        KRAKEN2 (
+            ch_unaligned_sequences,
+            params.kraken_db,
+            params.save_kraken_assignments,
+            params.save_kraken_unassigned
+        )
+        ch_software_versions = ch_software_versions.mix(KRAKEN2.out.versions)
+
+        ch_kraken2_mqc = KRAKEN2.out.report
+    }
 
     if (params.run_multiqc) {
         workflow_summary    = WorkflowCutandrun.paramsSummaryMultiqc(workflow, summary_params)
@@ -942,7 +982,8 @@ workflow CUTANDRUN {
             ch_peakqc_count_consensus_mqc.collect{it[1]}.ifEmpty([]),
             ch_peakqc_reprod_perc_mqc.collect().ifEmpty([]),
             ch_frag_len_hist_mqc.collect().ifEmpty([]),
-            ch_linear_duplication_mqc.collect{it[1]}.ifEmpty([])
+            ch_linear_duplication_mqc.collect{it[1]}.ifEmpty([]),
+            ch_kraken2_mqc.collect{it[1]}.ifEmpty([])
         )
         multiqc_report = MULTIQC.out.report.toList()
     }

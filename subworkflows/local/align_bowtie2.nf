@@ -56,6 +56,8 @@ workflow ALIGN_BOWTIE2 {
 
     orig_bam             = BOWTIE2_TARGET_ALIGN.out.aligned             // channel: [ val(meta), bam ]
     orig_spikein_bam     = BOWTIE2_SPIKEIN_ALIGN.out.aligned            // channel: [ val(meta), bam ]
+    unal_seqs            = BOWTIE2_TARGET_ALIGN.out.fastq
+    
 
     bowtie2_log          = BOWTIE2_TARGET_ALIGN.out.log                 // channel: [ val(meta), log_final ]
     bowtie2_spikein_log  = BOWTIE2_SPIKEIN_ALIGN.out.log                // channel: [ val(meta), log_final ]
