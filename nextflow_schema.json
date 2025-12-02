@@ -64,6 +64,11 @@
                     "fa_icon": "fas fa-folder-plus",
                     "description": "Save alignment intermediates to the output directory (WARNING: can be very large)"
                 },
+                "save_last_bam": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-folder-plus",
+                    "description": "Save last created BAM Files to the output directory"
+                },
                 "email": {
                     "type": "string",
                     "description": "Email address for completion summary.",
